@@ -22,7 +22,7 @@ const CONFIG = {
 
   // Familias que siempre se cobran a su cuenta familiar (renglón con solo el apellido),
   // aunque el niño ponga su nombre.
-  FAMILIAS_CUENTA_UNICA: ['DELGADILLO'],
+  FAMILIAS_CUENTA_UNICA: ['DELGADILLO', 'GUINDI', 'NAGAR', 'NISSAN'],
 };
 
 const PROP_API_KEY = 'ANTHROPIC_API_KEY';
