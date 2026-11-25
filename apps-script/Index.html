@@ -321,7 +321,6 @@
     var p = [];
     if (!m.cuentaId || !porId[m.cuentaId]) p.push('Elige la cuenta');
     if (!(Number(m.monto) > 0)) p.push('Falta el monto');
-    if (m.cuentaId && m.cuentaId.indexOf('B:') === 0 && m.tipo === 'deposito') p.push('Depósito de Barzilay: anótalo a mano en su pestaña');
     return p;
   }
   function necesitaRevision(m) {
@@ -347,7 +346,12 @@
         m._saldo = null;
         if (!m.incluir || problemas(m).length) return;
         var c = porId[m.cuentaId];
-        if (c.tipoCuenta === 'barzilay') { m._saldo = 'Se suma en la pestaña BARZILAY, día ' + Number(h.fecha.slice(8, 10)); return; }
+        if (c.tipoCuenta === 'barzilay') {
+          m._saldo = m.tipo === 'deposito'
+            ? 'Depósito Barzilay: queda en Movimientos, anótalo tú en su pestaña como siempre'
+            : 'Se suma en la pestaña BARZILAY, día ' + Number(h.fecha.slice(8, 10));
+          return;
+        }
         var antes = actual[m.cuentaId] || { debe: c.debe, afavor: c.afavor };
         var despues = calcularSaldo(antes.debe, antes.afavor, m.tipo, Number(m.monto));
         actual[m.cuentaId] = despues;

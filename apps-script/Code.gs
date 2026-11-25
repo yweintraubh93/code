@@ -167,7 +167,6 @@ function guardarMovimientos(lote) {
       if (m.tipo !== 'cargo' && m.tipo !== 'deposito') throw new Error('Tipo inválido en: ' + quien);
       const esB = String(m.cuentaId).indexOf('B:') === 0;
       if (esB && !ids[m.cuentaId]) throw new Error('No encuentro esa cuenta en la pestaña BARZILAY: ' + quien);
-      if (esB && m.tipo === 'deposito') throw new Error('Los depósitos de los Barzilay se anotan a mano en su pestaña: ' + quien);
       if (!esB && !/^A:\d+$/.test(String(m.cuentaId))) throw new Error('Falta elegir la cuenta en: ' + quien);
     });
 
@@ -371,10 +370,12 @@ function aplicarBarzilay_(ss, cuentaId, tipo, monto, fecha) {
   const nombre = cuentaId.replace('B:', '');
   const cuenta = leerBarzilay_(ss).filter(c => c.id === cuentaId)[0];
   if (!cuenta) throw new Error('No encuentro a ' + nombre + ' en la pestaña BARZILAY.');
-  if (tipo !== 'cargo') {
-    throw new Error('Los depósitos de los Barzilay se anotan a mano en su pestaña (no sé dónde van).');
-  }
   const dia = diaDeFecha_(fecha);
+  if (tipo !== 'cargo') {
+    // Los depósitos de los Barzilay los anota la dueña a mano; aquí solo quedan en Movimientos.
+    return { id: cuentaId, clave: 'B|' + nombre, etiqueta: 'BARZILAY ' + nombre + ' (depósito, anotar a mano)',
+      antes: { debe: '', afavor: '' }, despues: { debe: '', afavor: '' } };
+  }
   const fila = filaDelDia_(sh, dia);
   const celda = sh.getRange(fila, cuenta.columna);
   const antes = aNumero_(celda.getValue());
@@ -409,6 +410,7 @@ function revertirMovimiento_(ss, fila, c) {
   const monto = Number(fila[c['Monto']]);
   const tipo = fila[c['Tipo']];
   if (id.indexOf('B:') === 0) {
+    if (tipo !== 'cargo') return;  // los depósitos Barzilay no tocaron la pestaña
     const sh = ss.getSheetByName(CONFIG.HOJA_BARZILAY);
     const cuenta = leerBarzilay_(ss).filter(x => x.id === id)[0];
     const dia = diaDeFecha_(fila[c['Fecha hoja']]);

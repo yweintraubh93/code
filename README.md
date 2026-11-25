@@ -19,7 +19,7 @@ Todo vive dentro de tu misma hoja de Google: no hay servidor ni nada que pagar a
 | `60 Sophie 25-25` | Depósito de $60 y dos consumos de $25. |
 | `25-25` o `25+25+20` | Varios consumos, uno por cada número. |
 | Delgadillo, Guindi, Nagar, Nissan | Siempre van a su cuenta familiar, aunque el niño ponga su nombre. |
-| Barzilay | Se suma en la pestaña BARZILAY. Los depósitos de ellos se siguen anotando a mano. |
+| Barzilay | Los consumos se suman en la pestaña BARZILAY. Los depósitos solo quedan en Movimientos: tú los anotas en su pestaña como siempre. |
 | Renglón tachado | Aparece desmarcado. |
 | Hoja que ya se había guardado | Avisa y deja todo desmarcado para no cobrar dos veces. |
 
