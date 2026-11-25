@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuentas Cafetería</title>
+<style>
+  :root {
+    --bg: #faf7f2; --card: #ffffff; --ink: #2b2420; --muted: #7a6f66; --line: #e8e1d8;
+    --brand: #b5542a; --brand-ink: #ffffff; --ok: #2f7d4f; --ok-bg: #e7f4ec;
+    --warn: #9a6400; --warn-bg: #fff4d6; --bad: #b3261e; --bad-bg: #fde8e6;
+    --dep: #1f5fa8; --dep-bg: #e5effa; --off: #b9b0a7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1b1714; --card: #26211d; --ink: #f1ebe5; --muted: #a89c91; --line: #3a332d;
+      --brand: #e07a4a; --brand-ink: #1b1714; --ok: #6cc28f; --ok-bg: #1f3328;
+      --warn: #f0be55; --warn-bg: #3a2f17; --bad: #ff8a80; --bad-bg: #3d1f1c;
+      --dep: #8cb8ef; --dep-bg: #1c2a3b; --off: #5d554e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 18px 16px 8px; }
+  header h1 { margin: 0; font-size: 22px; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+  main { padding: 0 16px 140px; max-width: 720px; margin: 0 auto; }
+  .hidden { display: none !important; }
+
+  .subir { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 16px 0;
+    padding: 28px 16px; border: 2px dashed var(--line); border-radius: 16px; background: var(--card); text-align: center; }
+  .btn { appearance: none; border: 0; border-radius: 12px; padding: 14px 18px; font-size: 17px; font-weight: 600;
+    background: var(--brand); color: var(--brand-ink); cursor: pointer; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.sec { background: transparent; color: var(--brand); border: 1.5px solid var(--brand); }
+  .btn.chico { padding: 8px 12px; font-size: 14px; }
+  .nota { color: var(--muted); font-size: 13px; }
+
+  .hoja { margin: 18px 0 8px; }
+  .hoja-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 8px; }
+  .hoja-cab h2 { font-size: 16px; margin: 0; flex: 1 1 auto; }
+  .hoja-cab label { font-size: 14px; color: var(--muted); }
+  .hoja-cab input[type=date] { font-size: 15px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--card); color: var(--ink); }
+  .aviso { padding: 10px 12px; border-radius: 10px; font-size: 14px; margin: 8px 0; }
+  .aviso.warn { background: var(--warn-bg); color: var(--warn); }
+  .aviso.bad { background: var(--bad-bg); color: var(--bad); }
+  .aviso.ok { background: var(--ok-bg); color: var(--ok); }
+  .cargando { display: flex; align-items: center; gap: 10px; padding: 14px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 12px; color: var(--muted); }
+  .spin { width: 18px; height: 18px; border: 3px solid var(--line); border-top-color: var(--brand); border-radius: 50%;
+    animation: g 0.9s linear infinite; flex: none; }
+  @keyframes g { to { transform: rotate(360deg); } }
+
+  .mov { background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--ok);
+    border-radius: 12px; padding: 10px 12px; margin: 8px 0; }
+  .mov.revisar { border-left-color: var(--warn); background: linear-gradient(0deg, var(--warn-bg), var(--warn-bg)) padding-box; }
+  .mov.error { border-left-color: var(--bad); }
+  .mov.fuera { border-left-color: var(--off); opacity: .55; }
+  .mov-top { display: flex; align-items: flex-start; gap: 10px; }
+  .mov-top input[type=checkbox] { width: 22px; height: 22px; margin: 2px 0 0; flex: none; accent-color: var(--brand); }
+  .texto { flex: 1; font-family: ui-monospace, Menlo, monospace; font-size: 14px; word-break: break-word; }
+  .texto.tachado { text-decoration: line-through; }
+  .badge { font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 99px;
+    background: var(--line); color: var(--muted); flex: none; }
+  .badge.media { background: var(--warn-bg); color: var(--warn); }
+  .badge.baja { background: var(--bad-bg); color: var(--bad); }
+  .fila { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .fila input[type=search] { flex: 1 1 220px; min-width: 0; }
+  input.campo, select.campo { font-size: 16px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px;
+    background: var(--bg); color: var(--ink); }
+  input.campo.malo { border-color: var(--bad); }
+  .monto { width: 100px; }
+  .tipo { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .tipo button { border: 0; background: var(--bg); color: var(--muted); padding: 9px 11px; font-size: 14px; cursor: pointer; }
+  .tipo button.on.cargo { background: var(--brand); color: var(--brand-ink); }
+  .tipo button.on.deposito { background: var(--dep); color: #fff; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .chip { border: 1px solid var(--brand); color: var(--brand); background: transparent; border-radius: 99px;
+    padding: 5px 10px; font-size: 13px; cursor: pointer; }
+  .mov-nota { margin-top: 6px; font-size: 13px; color: var(--warn); }
+  .saldo { margin-top: 6px; font-size: 13px; color: var(--muted); }
+  .saldo b { color: var(--ink); }
+  .agregar { margin: 6px 0 0; }
+
+  footer { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--line);
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); }
+  footer .in { max-width: 720px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  footer .tot { flex: 1; font-size: 14px; color: var(--muted); }
+  footer .tot b { color: var(--ink); }
+  .resultado { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; margin-top: 16px; }
+  .resultado h2 { margin: 0 0 8px; }
+  .acciones { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>☕ Cuentas Cafetería</h1>
+  <p id="estadoCuentas">Cargando lista de alumnos…</p>
+</header>
+
+<main>
+  <section id="pantallaSubir" class="subir">
+    <div style="font-size:40px">📄</div>
+    <button class="btn" id="btnSubir" disabled>Tomar foto o subir hoja</button>
+    <input type="file" id="archivo" accept="image/*,application/pdf" multiple class="hidden">
+    <div class="nota">Puedes elegir varias fotos o un PDF escaneado. Nada se guarda hasta que lo confirmes.</div>
+  </section>
+
+  <section id="pantallaRevisar" class="hidden">
+    <div id="hojas"></div>
+  </section>
+
+  <section id="pantallaListo" class="hidden"></section>
+</main>
+
+<footer id="barra" class="hidden">
+  <div class="in">
+    <div class="tot" id="totales"></div>
+    <button class="btn sec chico" id="btnCancelar">Cancelar</button>
+    <button class="btn" id="btnGuardar" disabled>Guardar</button>
+  </div>
+</footer>
+
+<datalist id="listaCuentas"></datalist>
+
+<script>
+(function () {
+  'use strict';
+
+  var PDF_LIB_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
+  var MAX_LADO = 2000;
+  var LECTURAS_A_LA_VEZ = 3;
+
+  var cuentas = [], porId = {}, porEtiqueta = {};
+  var hojas = [];        // [{titulo, fecha, estado, error, yaProcesada, huella, movs:[]}]
+  var archivosNombre = '';
+  var guardando = false;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var el = function (tag, attrs, hijos) {
+    var n = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (k === 'text') n.textContent = attrs[k];
+      else if (k === 'class') n.className = attrs[k];
+      else if (k.indexOf('on') === 0) n.addEventListener(k.slice(2), attrs[k]);
+      else n.setAttribute(k, attrs[k]);
+    });
+    (hijos || []).forEach(function (h) { if (h) n.appendChild(typeof h === 'string' ? document.createTextNode(h) : h); });
+    return n;
+  };
+  var pesos = function (n) {
+    return '$' + Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  };
+  var hoyISO = function () {
+    var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 10);
+  };
+  var llamar = function (fn, arg) {
+    return new Promise(function (ok, mal) {
+      google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) {
+        mal(new Error(e && e.message ? e.message : String(e)));
+      })[fn](arg);
+    });
+  };
+
+  /* ---------- Cuentas ---------- */
+  function cargarCuentas() {
+    return llamar('obtenerCuentas').then(function (lista) {
+      cuentas = lista; porId = {}; porEtiqueta = {};
+      var dl = $('listaCuentas'); dl.innerHTML = '';
+      lista.forEach(function (c) {
+        porId[c.id] = c; porEtiqueta[c.etiqueta] = c.id;
+        dl.appendChild(el('option', { value: c.etiqueta }));
+      });
+      $('estadoCuentas').textContent = lista.length + ' cuentas cargadas de tu hoja.';
+      $('btnSubir').disabled = false;
+    }).catch(function (e) {
+      $('estadoCuentas').textContent = 'No pude leer la hoja: ' + e.message;
+    });
+  }
+
+  /* ---------- Archivos ---------- */
+  $('btnSubir').addEventListener('click', function () { $('archivo').click(); });
+  $('archivo').addEventListener('change', function (ev) {
+    var files = Array.prototype.slice.call(ev.target.files || []);
+    ev.target.value = '';
+    if (files.length) procesarArchivos(files);
+  });
+
+  function procesarArchivos(files) {
+    archivosNombre = files.map(function (f) { return f.name; }).join(', ');
+    hojas = [];
+    mostrar('pantallaRevisar');
+    var trabajos = [];
+
+    var preparar = files.map(function (f) {
+      return huellaDe(f).then(function (huella) {
+        if (f.type === 'application/pdf') {
+          return partirPdf(f).then(function (paginas) {
+            paginas.forEach(function (p, i) {
+              trabajos.push({ titulo: f.name + (paginas.length > 1 ? ' · página ' + (i + 1) : ''),
+                data: p, mediaType: 'application/pdf', huella: huella + (paginas.length > 1 ? '#p' + (i + 1) : '') });
+            });
+          });
+        }
+        return reducirImagen(f).then(function (data) {
+          trabajos.push({ titulo: f.name, data: data, mediaType: 'image/jpeg', huella: huella });
+        });
+      });
+    });
+
+    Promise.all(preparar).then(function () {
+      hojas = trabajos.map(function (t) {
+        return { titulo: t.titulo, fecha: hoyISO(), estado: 'leyendo', movs: [], huella: t.huella, trabajo: t };
+      });
+      pintar();
+      return enCola(hojas, LECTURAS_A_LA_VEZ, leerUna);
+    }).catch(function (e) {
+      hojas.push({ titulo: 'Error', estado: 'error', error: e.message, movs: [] });
+      pintar();
+    });
+  }
+
+  function leerUna(h) {
+    var t = h.trabajo;
+    return llamar('leerHoja', { data: t.data, mediaType: t.mediaType, nombreArchivo: t.titulo, huella: t.huella, hoy: hoyISO() })
+      .then(function (r) {
+        h.estado = 'listo';
+        h.yaProcesada = r.yaProcesada;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(r.fechaHoja)) h.fecha = r.fechaHoja;
+        h.movs = r.movimientos.map(function (m) {
+          m.incluir = !m.tachado && !h.yaProcesada;
+          return m;
+        });
+      })
+      .catch(function (e) { h.estado = 'error'; h.error = e.message; })
+      .then(function () { delete h.trabajo; pintar(); });
+  }
+
+  function enCola(items, n, fn) {
+    var i = 0;
+    var siguiente = function () {
+      if (i >= items.length) return Promise.resolve();
+      var it = items[i++];
+      return fn(it).then(siguiente);
+    };
+    var hilos = [];
+    for (var k = 0; k < Math.min(n, items.length); k++) hilos.push(siguiente());
+    return Promise.all(hilos);
+  }
+
+  function huellaDe(file) {
+    return file.arrayBuffer().then(function (buf) {
+      if (!(window.crypto && crypto.subtle)) return file.name + ':' + file.size;
+      return crypto.subtle.digest('SHA-256', buf).then(function (d) {
+        return Array.prototype.map.call(new Uint8Array(d), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('').slice(0, 24);
+      });
+    });
+  }
+
+  function aBase64(buf) {
+    var bytes = new Uint8Array(buf), s = '', trozo = 0x8000;
+    for (var i = 0; i < bytes.length; i += trozo) s += String.fromCharCode.apply(null, bytes.subarray(i, i + trozo));
+    return btoa(s);
+  }
+
+  function reducirImagen(file) {
+    return new Promise(function (ok, mal) {
+      var img = new Image();
+      var url = URL.createObjectURL(file);
+      img.onload = function () {
+        var esc = Math.min(1, MAX_LADO / Math.max(img.width, img.height));
+        var c = document.createElement('canvas');
+        c.width = Math.round(img.width * esc); c.height = Math.round(img.height * esc);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        ok(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
+      };
+      img.onerror = function () { mal(new Error('No pude abrir la imagen ' + file.name)); };
+      img.src = url;
+    });
+  }
+
+  var pdfLibPromesa = null;
+  function cargarPdfLib() {
+    if (!pdfLibPromesa) pdfLibPromesa = new Promise(function (ok, mal) {
+      var s = document.createElement('script');
+      s.src = PDF_LIB_URL; s.onload = function () { ok(window.PDFLib); }; s.onerror = mal;
+      document.head.appendChild(s);
+    });
+    return pdfLibPromesa;
+  }
+
+  // Separa el PDF en páginas para leerlas en paralelo; si no se puede, se manda completo.
+  function partirPdf(file) {
+    return file.arrayBuffer().then(function (buf) {
+      return cargarPdfLib().then(function (PDFLib) {
+        return PDFLib.PDFDocument.load(buf).then(function (doc) {
+          var n = doc.getPageCount();
+          if (n <= 1) return [aBase64(buf)];
+          var tareas = [];
+          for (var i = 0; i < n; i++) (function (i) {
+            tareas.push(PDFLib.PDFDocument.create().then(function (nuevo) {
+              return nuevo.copyPages(doc, [i]).then(function (pags) {
+                nuevo.addPage(pags[0]);
+                return nuevo.save();
+              });
+            }).then(function (bytes) { return aBase64(bytes); }));
+          })(i);
+          return Promise.all(tareas);
+        });
+      }).catch(function () { return [aBase64(buf)]; });
+    });
+  }
+
+  /* ---------- Validación y saldos ---------- */
+  function problemas(m) {
+    var p = [];
+    if (!m.cuentaId || !porId[m.cuentaId]) p.push('Elige la cuenta');
+    if (!(Number(m.monto) > 0)) p.push('Falta el monto');
+    if (m.cuentaId && m.cuentaId.indexOf('B:') === 0 && m.tipo === 'deposito') p.push('Depósito de Barzilay: anótalo a mano en su pestaña');
+    return p;
+  }
+  function necesitaRevision(m) {
+    return problemas(m).length > 0 || m.confianza !== 'alta' || !!m.nota;
+  }
+  function calcularSaldo(debe, afavor, tipo, monto) {
+    debe = debe || 0; afavor = afavor || 0;
+    if (tipo === 'cargo') { var u = Math.min(afavor, monto); afavor -= u; debe += monto - u; }
+    else { var v = Math.min(debe, monto); debe -= v; afavor += monto - v; }
+    return { debe: Math.round(debe * 100) / 100, afavor: Math.round(afavor * 100) / 100 };
+  }
+  function textoSaldo(s) {
+    if (s.debe && s.afavor) return 'debe ' + pesos(s.debe) + ' / a favor ' + pesos(s.afavor);
+    if (s.afavor) return 'a favor ' + pesos(s.afavor);
+    if (s.debe) return 'debe ' + pesos(s.debe);
+    return 'en ceros';
+  }
+  // Saldo antes → después de cada movimiento, acumulando los de la misma cuenta.
+  function simularSaldos() {
+    var actual = {};
+    hojas.forEach(function (h) {
+      h.movs.forEach(function (m) {
+        m._saldo = null;
+        if (!m.incluir || problemas(m).length) return;
+        var c = porId[m.cuentaId];
+        if (c.tipoCuenta === 'barzilay') { m._saldo = 'Se suma en la pestaña BARZILAY, día ' + Number(h.fecha.slice(8, 10)); return; }
+        var antes = actual[m.cuentaId] || { debe: c.debe, afavor: c.afavor };
+        var despues = calcularSaldo(antes.debe, antes.afavor, m.tipo, Number(m.monto));
+        actual[m.cuentaId] = despues;
+        m._saldo = [textoSaldo(antes), textoSaldo(despues)];
+      });
+    });
+  }
+
+  /* ---------- Pintar ---------- */
+  function mostrar(id) {
+    ['pantallaSubir', 'pantallaRevisar', 'pantallaListo'].forEach(function (p) { $(p).classList.toggle('hidden', p !== id); });
+    $('barra').classList.toggle('hidden', id !== 'pantallaRevisar');
+  }
+
+  function pintar() {
+    simularSaldos();
+    var cont = $('hojas'); cont.innerHTML = '';
+    hojas.forEach(function (h) { cont.appendChild(pintarHoja(h)); });
+    pintarTotales();
+  }
+
+  function pintarHoja(h) {
+    var caja = el('div', { class: 'hoja' });
+    var fecha = el('input', { type: 'date', value: h.fecha, onchange: function (e) { h.fecha = e.target.value; pintar(); } });
+    caja.appendChild(el('div', { class: 'hoja-cab' }, [
+      el('h2', { text: h.titulo }),
+      h.estado === 'listo' ? el('label', null, ['Fecha ', fecha]) : null,
+    ]));
+
+    if (h.estado === 'leyendo') {
+      caja.appendChild(el('div', { class: 'cargando' }, [el('div', { class: 'spin' }), 'Leyendo la hoja… (puede tardar unos 30 segundos)']));
+      return caja;
+    }
+    if (h.estado === 'error') {
+      caja.appendChild(el('div', { class: 'aviso bad', text: h.error }));
+      return caja;
+    }
+    if (h.yaProcesada) {
+      caja.appendChild(el('div', { class: 'aviso warn',
+        text: '⚠️ Esta hoja ya se había guardado antes. Dejé todo desmarcado para no cobrar dos veces.' }));
+    }
+    if (!h.movs.length) caja.appendChild(el('div', { class: 'aviso warn', text: 'No encontré movimientos en esta hoja.' }));
+    h.movs.forEach(function (m) { caja.appendChild(pintarMov(h, m)); });
+    caja.appendChild(el('button', { class: 'btn sec chico agregar', text: '+ Agregar renglón a mano', onclick: function () {
+      h.movs.push({ textoOriginal: '(agregado a mano)', nombreLeido: '', tipo: 'cargo', monto: null, tachado: false,
+        cuentaId: null, candidatos: [], confianza: 'alta', nota: '', incluir: true });
+      pintar();
+    } }));
+    return caja;
+  }
+
+  function pintarMov(h, m) {
+    var probs = problemas(m);
+    var clase = 'mov' + (!m.incluir ? ' fuera' : (probs.length ? ' error revisar' : (necesitaRevision(m) ? ' revisar' : '')));
+    var caja = el('div', { class: clase });
+
+    var check = el('input', { type: 'checkbox', onchange: function (e) { m.incluir = e.target.checked; pintar(); } });
+    check.checked = !!m.incluir;
+    caja.appendChild(el('div', { class: 'mov-top' }, [
+      check,
+      el('div', { class: 'texto' + (m.tachado ? ' tachado' : ''), text: m.textoOriginal || '—' }),
+      el('span', { class: 'badge ' + m.confianza, text: m.tachado ? 'tachado' : m.confianza }),
+    ]));
+
+    var buscador = el('input', { type: 'search', class: 'campo' + (m.incluir && !porId[m.cuentaId] ? ' malo' : ''),
+      list: 'listaCuentas', placeholder: m.nombreLeido ? 'Buscar: ' + m.nombreLeido : 'Buscar alumno…', autocomplete: 'off' });
+    buscador.value = m.cuentaId && porId[m.cuentaId] ? porId[m.cuentaId].etiqueta : '';
+    buscador.addEventListener('change', function (e) {
+      var id = porEtiqueta[e.target.value];
+      m.cuentaId = id || null;
+      if (id) m.incluir = true;
+      pintar();
+    });
+
+    var monto = el('input', { type: 'number', inputmode: 'decimal', min: '0', step: '0.5',
+      class: 'campo monto' + (m.incluir && !(Number(m.monto) > 0) ? ' malo' : ''), placeholder: 'Monto' });
+    monto.value = m.monto == null ? '' : m.monto;
+    monto.addEventListener('change', function (e) { m.monto = e.target.value === '' ? null : Number(e.target.value); pintar(); });
+
+    var tipo = el('div', { class: 'tipo' }, ['cargo', 'deposito'].map(function (t) {
+      return el('button', { class: t + (m.tipo === t ? ' on' : ''), type: 'button',
+        text: t === 'cargo' ? 'Consumo' : 'Depósito', onclick: function () { m.tipo = t; pintar(); } });
+    }));
+
+    caja.appendChild(el('div', { class: 'fila' }, [buscador]));
+    caja.appendChild(el('div', { class: 'fila' }, [tipo, monto]));
+
+    var candidatos = (m.candidatos || []).filter(function (id) { return porId[id] && id !== m.cuentaId; });
+    if (candidatos.length && !m.cuentaId) {
+      caja.appendChild(el('div', { class: 'chips' }, candidatos.map(function (id) {
+        return el('button', { class: 'chip', type: 'button', text: porId[id].etiqueta,
+          onclick: function () { m.cuentaId = id; m.incluir = true; pintar(); } });
+      })));
+    }
+
+    var avisos = [];
+    if (m.nota) avisos.push(m.nota);
+    if (m.incluir) avisos = avisos.concat(probs);
+    if (avisos.length) caja.appendChild(el('div', { class: 'mov-nota', text: avisos.join(' · ') }));
+
+    if (m._saldo) {
+      caja.appendChild(typeof m._saldo === 'string'
+        ? el('div', { class: 'saldo', text: m._saldo })
+        : el('div', { class: 'saldo' }, ['Saldo: ', el('b', { text: m._saldo[0] }), ' → ', el('b', { text: m._saldo[1] })]));
+    }
+    return caja;
+  }
+
+  function movimientosAGuardar() {
+    var lista = [];
+    hojas.forEach(function (h) {
+      h.movs.forEach(function (m) {
+        if (!m.incluir) return;
+        lista.push({ m: m, h: h });
+      });
+    });
+    return lista;
+  }
+
+  function pintarTotales() {
+    var sel = movimientosAGuardar();
+    var leyendo = hojas.some(function (h) { return h.estado === 'leyendo'; });
+    var malos = sel.filter(function (x) { return problemas(x.m).length; }).length;
+    var cargos = 0, deps = 0;
+    sel.forEach(function (x) { var n = Number(x.m.monto) || 0; if (x.m.tipo === 'cargo') cargos += n; else deps += n; });
+    var t = $('totales'); t.innerHTML = '';
+    t.appendChild(el('div', null, [el('b', { text: sel.length + ' movimientos' })]));
+    t.appendChild(el('div', { text: 'Consumos ' + pesos(cargos) + ' · Depósitos ' + pesos(deps) }));
+    if (malos) t.appendChild(el('div', { style: 'color:var(--bad)', text: malos + ' por corregir' }));
+    $('btnGuardar').disabled = guardando || leyendo || !sel.length || malos > 0;
+    $('btnGuardar').textContent = guardando ? 'Guardando…' : 'Guardar';
+  }
+
+  /* ---------- Guardar ---------- */
+  $('btnCancelar').addEventListener('click', function () {
+    if (!confirm('¿Descartar esta lectura? No se guarda nada.')) return;
+    hojas = []; mostrar('pantallaSubir');
+  });
+
+  $('btnGuardar').addEventListener('click', function () {
+    var sel = movimientosAGuardar();
+    guardando = true; pintarTotales();
+    var huellas = hojas.filter(function (h) { return h.estado === 'listo' && h.huella; }).map(function (h) { return h.huella; });
+    llamar('guardarMovimientos', {
+      archivo: archivosNombre,
+      huellas: huellas,
+      movimientos: sel.map(function (x) {
+        var c = porId[x.m.cuentaId];
+        return { cuentaId: x.m.cuentaId, clave: c.clave, tipo: x.m.tipo, monto: Number(x.m.monto),
+          fecha: x.h.fecha, textoOriginal: x.m.textoOriginal };
+      }),
+    }).then(function (r) {
+      guardando = false;
+      pintarListo(r);
+      cargarCuentas();
+    }).catch(function (e) {
+      guardando = false; pintarTotales();
+      alert('No se pudo guardar: ' + e.message + '\n\nRevisa la pestaña Movimientos para ver qué alcanzó a guardarse.');
+    });
+  });
+
+  function pintarListo(r) {
+    var p = $('pantallaListo'); p.innerHTML = '';
+    var deshacer = el('button', { class: 'btn sec', text: 'Deshacer este lote', onclick: function () {
+      if (!confirm('¿Deshacer los ' + r.cantidad + ' movimientos que acabas de guardar?')) return;
+      deshacer.disabled = true;
+      llamar('deshacerLote', r.lote).then(function (x) {
+        p.insertBefore(el('div', { class: 'aviso ok', text: 'Listo, se revirtieron ' + x.revertidos + ' movimientos.' }), p.firstChild);
+        cargarCuentas();
+      }).catch(function (e) { alert('No se pudo deshacer: ' + e.message); deshacer.disabled = false; });
+    } });
+    p.appendChild(el('div', { class: 'resultado' }, [
+      el('h2', { text: '✅ Guardado' }),
+      el('div', { text: r.cantidad + ' movimientos · Consumos ' + pesos(r.cargos) + ' · Depósitos ' + pesos(r.depositos) }),
+      el('div', { class: 'nota', text: 'Quedó todo anotado en la pestaña "Movimientos" (lote ' + r.lote + ').' }),
+      el('div', { class: 'acciones' }, [
+        el('button', { class: 'btn', text: 'Procesar otra hoja', onclick: function () { hojas = []; mostrar('pantallaSubir'); } }),
+        deshacer,
+      ]),
+    ]));
+    mostrar('pantallaListo');
+  }
+
+  // Modo prueba fuera de Google (para revisar el diseño)
+  window.__app = { set: function (c, h) { cuentas = c; porId = {}; porEtiqueta = {};
+    c.forEach(function (x) { porId[x.id] = x; porEtiqueta[x.etiqueta] = x.id; }); hojas = h; mostrar('pantallaRevisar'); pintar(); } };
+
+  if (window.google && google.script) cargarCuentas();
+})();
+</script>
+</body>
+</html>
